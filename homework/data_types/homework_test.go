@@ -1,15 +1,20 @@
 package main
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 // go test -v homework_test.go
 
+// логика для наглядности и усвоения материала
+// ((number >> 24) & 0x000000FF) Сдвигаем число на 3 байта (24 бита) вправо, оставляем младший байт с помощью маски
+// ((number >> 8) & 0x0000FF00) Сдвигаем число на 1 байт вправо, оставляем байт на 2й ппозиции
+// ((number << 8) & 0x00FF0000) Сдвигаем число на 1 байт влево, оставляем байт на 3й позиции
+// ((number << 24) & 0xFF000000) Cдвигаем число на 3 байта влево, оставляем старший байт
+// побитовым ИЛИ склеиваем результат
 func ToLittleEndian(number uint32) uint32 {
-	return 0 // need to implement
+	return ((number >> 24) & 0x000000FF) | ((number >> 8) & 0x0000FF00) | ((number << 8) & 0x00FF0000) | ((number << 24) & 0xFF000000)
 }
 
 func TestСonversion(t *testing.T) {
