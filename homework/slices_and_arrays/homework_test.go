@@ -1,45 +1,72 @@
 package main
 
 import (
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // go test -v homework_test.go
 
 type CircularQueue struct {
-	values []int
-	// need to implement
+	values   []int
+	capacity int
+	head     int
+	tail     int
+	count    int
 }
 
-func NewCircularQueue(size int) CircularQueue {
-	return CircularQueue{} // need to implement
+func NewCircularQueue(size int) *CircularQueue {
+	return &CircularQueue{
+		values:   make([]int, size),
+		capacity: size,
+		head:     0,
+		tail:     0,
+		count:    0,
+	}
 }
 
 func (q *CircularQueue) Push(value int) bool {
-	return false // need to implement
+	if q.count == q.capacity {
+		return false
+	}
+	q.values[q.tail] = value
+	q.tail = (q.tail + 1) % q.capacity
+	q.count++
+	return true
 }
 
 func (q *CircularQueue) Pop() bool {
-	return false // need to implement
+	if q.count == 0 {
+		return false
+	}
+	_ = q.values[q.head]
+	q.head = (q.head + 1) % q.capacity
+	q.count--
+	return true
 }
 
 func (q *CircularQueue) Front() int {
-	return -1 // need to implement
+	if q.count == 0 {
+		return -1
+	}
+	return q.values[q.head]
 }
 
 func (q *CircularQueue) Back() int {
-	return -1 // need to implement
+	if q.count == 0 {
+		return -1
+	}
+	lastIdx := (q.tail - 1 + q.capacity) % q.capacity
+	return q.values[lastIdx]
 }
 
 func (q *CircularQueue) Empty() bool {
-	return false // need to implement
+	return q.count == 0
 }
 
 func (q *CircularQueue) Full() bool {
-	return false // need to implement
+	return q.count == q.capacity
 }
 
 func TestCircularQueue(t *testing.T) {
