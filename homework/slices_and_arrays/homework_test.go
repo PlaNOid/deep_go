@@ -20,9 +20,6 @@ func NewCircularQueue(size int) *CircularQueue {
 	return &CircularQueue{
 		values:   make([]int, size),
 		capacity: size,
-		head:     0,
-		tail:     0,
-		count:    0,
 	}
 }
 
@@ -40,7 +37,6 @@ func (q *CircularQueue) Pop() bool {
 	if q.count == 0 {
 		return false
 	}
-	_ = q.values[q.head]
 	q.head = (q.head + 1) % q.capacity
 	q.count--
 	return true
