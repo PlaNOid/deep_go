@@ -25,7 +25,7 @@ func comparisonAndConcatenation1() {
 	var y = []byte{1023: 'y'}
 
 	if string(x) != string(y) { // no allocation with copy
-		s := (" " + string(x) + string(y))[1:] // no allocation with copy
+		s := (" " + string(x) + string(y))[1:] // single allocation and copy
 		_ = s
 	}
 }
