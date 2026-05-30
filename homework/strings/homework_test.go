@@ -8,30 +8,63 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// go test -v homework_test.go
+
 type COWBuffer struct {
 	data []byte
 	refs *int
-	// need to implement
 }
 
 func NewCOWBuffer(data []byte) COWBuffer {
-	return COWBuffer{} // need to implement
+	refs := 1
+	return COWBuffer{
+		data: data,
+		refs: &refs,
+	}
 }
 
 func (b *COWBuffer) Clone() COWBuffer {
-	return COWBuffer{} // need to implement
+	*b.refs++
+	return COWBuffer{
+		data: b.data,
+		refs: b.refs,
+	}
 }
 
 func (b *COWBuffer) Close() {
-	// need to implement
+	*b.refs--
+	if *b.refs == 0 {
+		b.data = nil
+	}
+	b.refs = nil
 }
 
 func (b *COWBuffer) Update(index int, value byte) bool {
-	return false // need to implement
+	if b.refs == nil || b.data == nil {
+		return false
+	}
+
+	if index < 0 || index >= len(b.data) {
+		return false
+	}
+
+	if *b.refs > 1 {
+		newData := make([]byte, len(b.data))
+		copy(newData, b.data)
+
+		*b.refs--
+
+		newRefs := 1
+		b.data = newData
+		b.refs = &newRefs
+	}
+
+	b.data[index] = value
+	return true
 }
 
 func (b *COWBuffer) String() string {
-	return "" // need to implement
+	return unsafe.String(unsafe.SliceData(b.data), len(b.data))
 }
 
 func TestCOWBuffer(t *testing.T) {
@@ -62,6 +95,7 @@ func TestCOWBuffer(t *testing.T) {
 	assert.Equal(t, unsafe.SliceData(copy1.data), unsafe.SliceData(copy2.data))
 
 	copy1.Close()
+	assert.True(t, copy1.refs == nil)
 
 	previous := copy2.data
 	copy2.Update(0, 'f')
@@ -71,4 +105,5 @@ func TestCOWBuffer(t *testing.T) {
 	assert.Equal(t, unsafe.SliceData(previous), unsafe.SliceData(current))
 
 	copy2.Close()
+	assert.True(t, copy2.refs == nil)
 }
