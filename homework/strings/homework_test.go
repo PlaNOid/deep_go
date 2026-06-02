@@ -54,9 +54,9 @@ func (b *COWBuffer) Update(index int, value byte) bool {
 
 		*b.refs--
 
-		newRefs := 1
-		b.data = newData
-		b.refs = &newRefs
+		newBuffer := NewCOWBuffer(newData)
+		b.data = newBuffer.data
+		b.refs = newBuffer.refs
 	}
 
 	b.data[index] = value
