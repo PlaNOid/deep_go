@@ -47,6 +47,25 @@ func deleteNode(n *node, key int) (*node, bool) {
 	return n, deleted
 }
 
+func (m *OrderedMap) insertNode(n *node, key, value int) (*node, bool) {
+	if n == nil {
+		return &node{key: key, value: value}, true
+	}
+
+	if key < n.key {
+		newLeft, inserted := m.insertNode(n.left, key, value)
+		n.left = newLeft
+		return n, inserted
+	} else if key > n.key {
+		newRight, inserted := m.insertNode(n.right, key, value)
+		n.right = newRight
+		return n, inserted
+	}
+
+	n.value = value
+	return n, false
+}
+
 type OrderedMap struct {
 	root *node
 	size int
@@ -57,32 +76,10 @@ func NewOrderedMap() OrderedMap {
 }
 
 func (m *OrderedMap) Insert(key, value int) {
-	if m.root == nil {
-		m.root = &node{key: key, value: value}
+	var inserted bool
+	m.root, inserted = m.insertNode(m.root, key, value)
+	if inserted {
 		m.size++
-		return
-	}
-
-	curr := m.root
-	for {
-		if key == curr.key {
-			curr.value = value
-			return
-		} else if key < curr.key {
-			if curr.left == nil {
-				curr.left = &node{key: key, value: value}
-				m.size++
-				return
-			}
-			curr = curr.left
-		} else {
-			if curr.right == nil {
-				curr.right = &node{key: key, value: value}
-				m.size++
-				return
-			}
-			curr = curr.right
-		}
 	}
 }
 
