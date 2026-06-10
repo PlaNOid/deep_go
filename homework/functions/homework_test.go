@@ -14,6 +14,10 @@ func Map(data []int, action func(int) int) []int {
 		return nil
 	}
 
+	if len(data) == 0 {
+		return []int{}
+	}
+
 	result := make([]int, len(data))
 	for i, v := range data {
 		result[i] = action(v)
@@ -24,6 +28,10 @@ func Map(data []int, action func(int) int) []int {
 func Filter(data []int, action func(int) bool) []int {
 	if data == nil {
 		return nil
+	}
+
+	if len(data) == 0 {
+		return []int{}
 	}
 
 	result := make([]int, 0, len(data))
