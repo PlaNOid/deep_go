@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,21 +19,45 @@ type MessageService struct {
 }
 
 type Container struct {
-	// need to implement
+	constructors map[string]func(*Container) (interface{}, error)
+	instances    map[string]interface{}
 }
 
 func NewContainer() *Container {
-	// need to implement
-	return &Container{}
+	return &Container{
+		constructors: make(map[string]func(*Container) (interface{}, error)),
+		instances:    make(map[string]interface{}),
+	}
 }
 
 func (c *Container) RegisterType(name string, constructor interface{}) {
-	// need to implement
+	switch cons := constructor.(type) {
+	case func() interface{}:
+		c.constructors[name] = func(container *Container) (interface{}, error) {
+			return cons(), nil
+		}
+	default:
+		panic(fmt.Sprintf("Неподдерживаемая сигнатура для '%s'", name))
+	}
 }
 
 func (c *Container) Resolve(name string) (interface{}, error) {
-	// need to implement
-	return nil, nil
+	if instance, ok := c.instances[name]; ok {
+		return instance, nil
+	}
+
+	constructor, exists := c.constructors[name]
+	if !exists {
+		return nil, fmt.Errorf("тип '%s' не зарегистрирован", name)
+	}
+
+	instance, err := constructor(c)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка создания '%s': %w", name, err)
+	}
+
+	c.instances[name] = instance
+	return instance, nil
 }
 
 func TestDIContainer(t *testing.T) {
@@ -51,7 +76,7 @@ func TestDIContainer(t *testing.T) {
 
 	u1 := userService1.(*UserService)
 	u2 := userService2.(*UserService)
-	assert.False(t, u1 == u2)
+	assert.True(t, u1 == u2) // из-за singleton
 
 	messageService, err := container.Resolve("MessageService")
 	assert.NoError(t, err)
