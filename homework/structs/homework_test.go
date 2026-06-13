@@ -10,22 +10,35 @@ import (
 
 // go test -v homework_test.go
 
+const (
+	NameMaxLength  = 42
+	BitsPerChar    = 7
+	BitsPerByte    = 8
+	NameDataOffset = 1
+
+	// calculate array lengh at compilation
+	NameArraySize = NameDataOffset + (NameMaxLength*BitsPerChar+BitsPerByte-1)/BitsPerByte
+
+	MinPrintableASCII = 32  // space
+	MaxPrintableASCII = 126 // ~
+)
+
 type Option func(*GamePerson)
 
 func charTo7Bit(c byte) byte {
-	if c >= 32 && c <= 126 {
-		return c - 32
+	if c >= MinPrintableASCII && c <= MaxPrintableASCII {
+		return c - MinPrintableASCII
 	}
 	return 0
 }
 
 func bit7ToChar(v byte) byte {
-	return v + 32
+	return v + MinPrintableASCII
 }
 
 func WithName(name string) func(*GamePerson) {
 	return func(person *GamePerson) {
-		person.name = [38]byte{}
+		person.name = [NameArraySize]byte{}
 		person.name[0] = byte(len(name))
 
 		var bitPos int
@@ -33,11 +46,11 @@ func WithName(name string) func(*GamePerson) {
 		for _, ch := range name {
 			val := charTo7Bit(byte(ch))
 
-			for i := 6; i >= 0; i-- {
+			// write symbol's bit, from head to tail
+			for i := BitsPerChar - 1; i >= 0; i-- {
 				bit := (val >> i) & 1
-
-				byteIdx := 1 + (bitPos / 8)
-				bitIdx := 7 - (bitPos % 8)
+				byteIdx := NameDataOffset + (bitPos / BitsPerByte)
+				bitIdx := (BitsPerByte - 1) - (bitPos % BitsPerByte)
 
 				if bit == 1 {
 					person.name[byteIdx] |= (1 << bitIdx)
@@ -129,10 +142,11 @@ const (
 )
 
 type GamePerson struct {
-	x, y, z int32
-	gold    uint32
-	stats   uint64
-	name    [38]byte
+	x, y, z int32               // 4B + 4B + 4B = 12B
+	gold    uint32              // 4B
+	stats   uint64              // 10b (mana) + 10b (health) + 4b (respect) + 4b (str) + 4b (exp) + 4b (lvl) + 3b (house, family, gun) + 2b (type) = 41b ~ 8B
+	name    [NameArraySize]byte // encoded 95 ASCII symbols (26(A-Z), 26(a-z), 10(0-9), 33(! _ " etc)) 7b for one (2^7 = 128),  7b * 42(max lenght) = 294b, (294b / 8 ~ 37B) + 1B(lenght) = 38B
+	// 12B + 4B + 8B + 38B = 62B align to 64B
 }
 
 const (
@@ -174,12 +188,14 @@ func (p *GamePerson) Name() string {
 
 	result := make([]byte, length)
 	var bitPos int
+
 	for i := range length {
 		var val byte
 
-		for j := 6; j >= 0; j-- {
-			byteIdx := 1 + (bitPos / 8)
-			bitIdx := 7 - (bitPos % 8)
+		// read symbol's bit, from head to tail
+		for j := BitsPerChar - 1; j >= 0; j-- {
+			byteIdx := NameDataOffset + (bitPos / BitsPerByte)
+			bitIdx := (BitsPerByte - 1) - (bitPos % BitsPerByte)
 
 			bit := (p.name[byteIdx] >> bitIdx) & 1
 			if bit == 1 {
