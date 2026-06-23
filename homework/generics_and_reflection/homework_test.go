@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,9 +18,73 @@ type Person struct {
 	Married bool   `properties:"married"`
 }
 
-func Serialize(person Person) string {
-	// need to implement
-	return ""
+func Serialize(v interface{}) (string, error) {
+	val := reflect.ValueOf(v)
+
+	if val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			return "", fmt.Errorf("nil pointer")
+		}
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return "", fmt.Errorf("expected struct, got %s", val.Kind())
+	}
+
+	var lines []string
+	t := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		field := t.Field(i)
+		fieldVal := val.Field(i)
+
+		tag := field.Tag.Get("properties")
+		if tag == "" || tag == "-" {
+			continue
+		}
+
+		name, omitempty := parseTag(tag)
+
+		if omitempty && isEmpty(fieldVal) {
+			continue
+		}
+
+		lines = append(lines, fmt.Sprintf("%s=%v", name, fieldVal.Interface()))
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
+func parseTag(tag string) (string, bool) {
+	parts := strings.Split(tag, ",")
+	name := strings.TrimSpace(parts[0])
+
+	omitempty := false
+	for _, opt := range parts[1:] {
+		if strings.TrimSpace(opt) == "omitempty" {
+			omitempty = true
+			break
+		}
+	}
+	return name, omitempty
+}
+
+func isEmpty(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.String:
+		return v.Len() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Pointer, reflect.Interface:
+		return v.IsNil()
+	}
+	return v.IsZero()
 }
 
 func TestSerialization(t *testing.T) {
@@ -49,7 +116,8 @@ func TestSerialization(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			result := Serialize(test.person)
+			result, err := Serialize(test.person)
+			assert.Nil(t, err)
 			assert.Equal(t, test.result, result)
 		})
 	}
