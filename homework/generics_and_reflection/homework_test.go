@@ -56,16 +56,19 @@ func Serialize(v interface{}) (string, error) {
 }
 
 func parseTag(tag string) (string, bool) {
+	omitempty := strings.Contains(tag, "omitempty")
 	parts := strings.Split(tag, ",")
-	name := strings.TrimSpace(parts[0])
-
-	omitempty := false
-	for _, opt := range parts[1:] {
-		if strings.TrimSpace(opt) == "omitempty" {
-			omitempty = true
-			break
+	var name string
+	if len(parts) > 1 {
+		for _, opt := range parts {
+			if strings.TrimSpace(opt) != "omitempty" {
+				name = opt
+			}
 		}
+	} else {
+		name = tag
 	}
+
 	return name, omitempty
 }
 
