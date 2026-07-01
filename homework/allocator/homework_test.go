@@ -1,12 +1,10 @@
 package main
 
 import (
+	"github.com/stretchr/testify/assert"
 	"reflect"
-	"sort"
 	"testing"
 	"unsafe"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // go test -v homework_test.go
@@ -17,42 +15,27 @@ func Defragment(memory []byte, pointers []unsafe.Pointer) {
 	}
 
 	base := uintptr(unsafe.Pointer(&memory[0]))
+	writeHead := 0
 
-	type ptrInfo struct {
-		byteIdx int
-		ptrIdx  int
-	}
-	infos := make([]ptrInfo, 0, len(pointers))
-
+	// Assume pointers are always sorted.
 	for i, p := range pointers {
 		if p == nil {
 			continue
 		}
-		offset := uintptr(p) - base
 
-		if int(offset) < 0 || int(offset) >= len(memory) {
+		srcIdx := int(uintptr(p) - base)
+		if srcIdx < 0 || srcIdx >= len(memory) {
 			continue
 		}
-		infos = append(infos, ptrInfo{byteIdx: int(offset), ptrIdx: i})
-	}
-
-	sort.Slice(infos, func(i, j int) bool {
-		return infos[i].byteIdx < infos[j].byteIdx
-	})
-
-	writeHead := 0
-	for _, info := range infos {
-		srcIdx := info.byteIdx
 
 		if srcIdx != writeHead {
 			memory[writeHead] = memory[srcIdx]
-			memory[srcIdx] = 0x00
+			memory[srcIdx] = 0
 		}
-
-		pointers[info.ptrIdx] = unsafe.Pointer(&memory[writeHead])
-
+		pointers[i] = unsafe.Pointer(&memory[writeHead])
 		writeHead++
 	}
+
 }
 
 func TestDefragmentation(t *testing.T) {
