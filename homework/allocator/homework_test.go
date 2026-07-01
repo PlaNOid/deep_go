@@ -1,17 +1,41 @@
 package main
 
 import (
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 	"unsafe"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // go test -v homework_test.go
 
 func Defragment(memory []byte, pointers []unsafe.Pointer) {
-	// need to implement
+	if len(memory) == 0 || len(pointers) == 0 {
+		return
+	}
+
+	base := uintptr(unsafe.Pointer(&memory[0]))
+	writeHead := 0
+
+	// Assume pointers are always sorted.
+	for i, p := range pointers {
+		if p == nil {
+			continue
+		}
+
+		srcIdx := int(uintptr(p) - base)
+		if srcIdx < 0 || srcIdx >= len(memory) {
+			continue
+		}
+
+		if srcIdx != writeHead {
+			memory[writeHead] = memory[srcIdx]
+			memory[srcIdx] = 0
+		}
+		pointers[i] = unsafe.Pointer(&memory[writeHead])
+		writeHead++
+	}
+
 }
 
 func TestDefragmentation(t *testing.T) {
